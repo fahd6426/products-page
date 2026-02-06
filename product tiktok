@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>منتجاتي</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: #f9f9f9;
+}
+.product {
+  background: #fff;
+  margin: 20px auto;
+  padding: 15px;
+  width: 280px;
+  border-radius: 8px;
+}
+img {
+  width: 100%;
+}
+button {
+  background: #ff9900;
+  color: #000;
+  border: none;
+  padding: 10px;
+  width: 100%;
+  font-size: 16px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h1>منتجاتي المميزة</h1>
+
+<div class="product">
+  <img src="ضع_رابط_الصورة_هنا">
+  <h3>اسم المنتج</h3>
+  <a href="ضع_رابط_الافلييت_هنا" target="_blank">
+    <button>اشتر الآن</button>
+  </a>
+</div>
+
+</body>
+</html>
