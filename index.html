@@ -3,30 +3,55 @@
 <head>
 <meta charset="UTF-8">
 <title>منتجاتي</title>
+
 <style>
 body {
   font-family: Arial, sans-serif;
   text-align: center;
   background: #f9f9f9;
+  margin: 0;
+  padding: 0;
 }
+
+h1 {
+  margin: 20px 0;
+}
+
+.products {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  padding-bottom: 40px;
+}
+
 .product {
   background: #fff;
-  margin: 20px auto;
   padding: 15px;
   width: 280px;
   border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
-img {
+
+.product img {
   width: 100%;
+  border-radius: 6px;
 }
-button {
+
+.product h3 {
+  font-size: 16px;
+  margin: 12px 0;
+}
+
+.buy-btn {
+  display: block;
   background: #ff9900;
   color: #000;
-  border: none;
+  text-decoration: none;
   padding: 10px;
-  width: 100%;
   font-size: 16px;
-  cursor: pointer;
+  border-radius: 5px;
+  font-weight: bold;
 }
 </style>
 </head>
@@ -35,12 +60,32 @@ button {
 
 <h1>منتجاتي المميزة</h1>
 
-<div class="product">
-  <img src="ضع_رابط_الصورة_هنا">
-  <h3>اسم المنتج</h3>
-  <a href="ضع_رابط_الافلييت_هنا" target="_blank">
-    <button>اشتر الآن</button>
-  </a>
+<div class="products">
+
+  <div class="product">
+    <img src="assets/images/product1.jpg">
+    <h3>اسم المنتج الأول</h3>
+    <a href="https://amzn.to/xxxx" target="_blank" class="buy-btn">
+      اشتر الآن
+    </a>
+  </div>
+
+  <div class="product">
+    <img src="assets/images/product2.jpg">
+    <h3>اسم المنتج الثاني</h3>
+    <a href="https://amzn.to/yyyy" target="_blank" class="buy-btn">
+      اشتر الآن
+    </a>
+  </div>
+
+  <div class="product">
+    <img src="assets/images/product3.jpg">
+    <h3>اسم المنتج الثالث</h3>
+    <a href="https://amzn.to/zzzz" target="_blank" class="buy-btn">
+      اشتر الآن
+    </a>
+  </div>
+
 </div>
 
 </body>
