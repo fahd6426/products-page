@@ -2,90 +2,101 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>منتجاتي</title>
+<title>منتجات رائجة في أمازون</title>
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  text-align: center;
-  background: #f9f9f9;
+  background: #f5f5f5;
   margin: 0;
   padding: 0;
+  direction: rtl;
 }
 
-h1 {
-  margin: 20px 0;
+.container {
+  max-width: 1100px;
+  margin: auto;
+  padding: 20px;
+}
+
+.page-title {
+  text-align: center;
+  font-size: 28px;
+  margin-bottom: 30px;
+  color: #222;
 }
 
 .products {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
-  padding-bottom: 40px;
 }
 
 .product {
   background: #fff;
-  padding: 15px;
-  width: 280px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  transition: transform 0.2s;
+}
+
+.product:hover {
+  transform: translateY(-5px);
 }
 
 .product img {
   width: 100%;
-  border-radius: 6px;
+  height: 230px;
+  object-fit: cover;
 }
 
 .product h3 {
-  font-size: 16px;
-  margin: 12px 0;
+  font-size: 18px;
+  padding: 15px;
+  margin: 0;
+  color: #333;
+  text-align: center;
 }
 
-.buy-btn {
-  display: block;
-  background: #ff9900;
-  color: #000;
+.product a {
   text-decoration: none;
-  padding: 10px;
-  font-size: 16px;
-  border-radius: 5px;
-  font-weight: bold;
+  color: inherit;
 }
 </style>
 </head>
 
 <body>
 
-<h1>منتجاتي المميزة</h1>
+<div class="container">
+  <h1 class="page-title">منتجات رائجة في أمازون</h1>
 
-<div class="products">
+  <div class="products">
 
-  <div class="product">
-    <img src="assets/images/product1.jpg">
-    <h3>اسم المنتج الأول</h3>
-    <a href="https://amzn.to/xxxx" target="_blank" class="buy-btn">
-      اشتر الآن
-    </a>
+    <!-- المنتج 1 -->
+    <div class="product">
+      <a href="https://amzn.to/4bo680n" target="_blank">
+        <img src="5565E40B-4351-4DFC-9764-4FD7EF65E837.jpeg" alt="منفضة غبار ومنفاخ">
+        <h3>منفضة غبار ومنفاخ</h3>
+      </a>
+    </div>
+
+    <!-- المنتج 2 -->
+    <div class="product">
+      <a href="https://amzn.to/4kqHLS7" target="_blank">
+        <img src="16184129-08C7-43E6-B3D8-F6CC23FF06E6.jpeg" alt="كاميرا سيارة 4K">
+        <h3>كاميرا سيارة 4K</h3>
+      </a>
+    </div>
+
+    <!-- المنتج 3 -->
+    <div class="product">
+      <a href="https://amzn.to/45QN9bh" target="_blank">
+        <img src="E88DA71C-24CC-4E5D-845D-7871D1B7EB39.jpeg" alt="مغناطيس ثلاجة صوتي">
+        <h3>مغناطيس ثلاجة صوتي</h3>
+      </a>
+    </div>
+
   </div>
-
-  <div class="product">
-    <img src="assets/images/product2.jpg">
-    <h3>اسم المنتج الثاني</h3>
-    <a href="https://amzn.to/yyyy" target="_blank" class="buy-btn">
-      اشتر الآن
-    </a>
-  </div>
-
-  <div class="product">
-    <img src="assets/images/product3.jpg">
-    <h3>اسم المنتج الثالث</h3>
-    <a href="https://amzn.to/zzzz" target="_blank" class="buy-btn">
-      اشتر الآن
-    </a>
-  </div>
-
 </div>
 
 </body>
