@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تحكم أمازون</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+min-height: 100vh;
+font-family: ‘Segoe UI’, Tahoma, sans-serif;
+direction: rtl;
+color: #fff;
+padding: 20px 14px 40px;
+}
+
+h1 { font-size: 22px; font-weight: 800; }
+h2 { font-size: 14px; color: #c4b5fd; margin-bottom: 14px; }
+
+.wrap { max-width: 620px; margin: 0 auto; }
+
+/* Header */
+.header { text-align: center; margin-bottom: 24px; }
+.header p { color: #a78bfa; font-size: 13px; margin-top: 4px; }
+
+/* Card */
+.card {
+background: rgba(255,255,255,0.06);
+border: 1px solid rgba(167,139,250,0.2);
+border-radius: 18px;
+padding: 20px;
+margin-bottom: 18px;
+}
+
+/* Input */
+input {
+width: 100%;
+background: rgba(255,255,255,0.08);
+border: 1px solid rgba(167,139,250,0.3);
+border-radius: 10px;
+padding: 11px 13px;
+color: #fff;
+font-size: 14px;
+font-family: inherit;
+outline: none;
+margin-bottom: 10px;
+direction: rtl;
+}
+input[type=password], input.ltr { direction: ltr; text-align: left; }
+input::placeholder { color: #6b7280; }
+
+/* Buttons */
+.btn {
+width: 100%;
+border: none;
+border-radius: 12px;
+padding: 13px;
+font-size: 15px;
+font-weight: 700;
+cursor: pointer;
+font-family: inherit;
+transition: opacity 0.2s;
+}
+.btn:active { opacity: 0.8; }
+.btn-purple { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; }
+.btn-green  { background: linear-gradient(135deg, #059669, #047857); color: #fff; }
+.btn-red    { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+.btn-sm {
+width: auto;
+padding: 6px 12px;
+font-size: 12px;
+border-radius: 8px;
+border: none;
+cursor: pointer;
+font-family: inherit;
+font-weight: 700;
+}
+.btn-sm:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Product row */
+.product-row {
+display: flex;
+align-items: center;
+gap: 8px;
+background: rgba(255,255,255,0.05);
+border-radius: 12px;
+padding: 10px 12px;
+margin-bottom: 8px;
+border: 1px solid transparent;
+}
+.product-row.first { background: rgba(124,58,237,0.2); border-color: rgba(167,139,250,0.4); }
+.num {
+background: rgba(124,58,237,0.4);
+border-radius: 7px;
+padding: 2px 8px;
+font-size: 12px;
+font-weight: 700;
+min-width: 26px;
+text-align: center;
+}
+.product-info { flex: 1; overflow: hidden; }
+.product-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.product-img  { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+.actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+/* Toast */
+#toast {
+position: fixed;
+top: 16px;
+left: 50%;
+transform: translateX(-50%);
+background: #1a1a2e;
+border: 1px solid #7c3aed;
+border-radius: 12px;
+padding: 11px 22px;
+font-size: 14px;
+font-weight: 700;
+z-index: 9999;
+display: none;
+box-shadow: 0 8px 32px rgba(124,58,237,0.4);
+white-space: nowrap;
+}
+
+/* Modal */
+.modal-bg {
+position: fixed; inset: 0;
+background: rgba(0,0,0,0.75);
+display: flex; align-items: center; justify-content: center;
+z-index: 999; padding: 20px;
+}
+.modal {
+background: #1e1b4b;
+border-radius: 20px;
+padding: 26px;
+border: 1px solid #7c3aed;
+text-align: center;
+width: 100%;
+max-width: 320px;
+}
+.modal p { margin: 12px 0 20px; font-size: 14px; line-height: 1.6; color: #d1d5db; }
+.modal-btns { display: flex; gap: 10px; }
+
+/* Setup */
+#setup-note { font-size: 12px; color: #9ca3af; line-height: 1.7; margin-bottom: 14px; }
+#setup-note a { color: #a78bfa; }
+
+/* Loading */
+.loading { text-align: center; padding: 30px; color: #a78bfa; }
+
+.status-dot {
+display: inline-block;
+width: 8px; height: 8px;
+border-radius: 50%;
+margin-left: 6px;
+vertical-align: middle;
+}
+.dot-green { background: #10b981; }
+.dot-red   { background: #ef4444; }
+
+.token-row { display: flex; gap: 8px; align-items: center; }
+.token-row input { margin-bottom: 0; flex: 1; }
+</style>
+
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- Confirm Modal -->
+
+<div class="modal-bg" id="confirm-modal" style="display:none;">
+  <div class="modal">
+    <div style="font-size:30px">⚠️</div>
+    <p id="confirm-msg"></p>
+    <div class="modal-btns">
+      <button class="btn btn-red" style="flex:1" onclick="confirmYes()">نعم</button>
+      <button class="btn btn-purple" style="flex:1;opacity:0.6" onclick="closeConfirm()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Header -->
+
+  <div class="header">
+    <div style="font-size:34px;margin-bottom:6px">🛒</div>
+    <h1>لوحة تحكم أمازون</h1>
+    <p id="header-sub">جاري التحميل...</p>
+  </div>
+
+  <!-- Setup Card (hidden after setup) -->
+
+  <div class="card" id="setup-card">
+    <h2>⚙️ إعداد أولي (مرة وحدة فقط)</h2>
+    <p id="setup-note">
+      1. افتح <a href="https://github.com/settings/tokens/new" target="_blank">هذا الرابط</a><br>
+      2. اكتب أي اسم (مثل: amazon-dashboard)<br>
+      3. فعّل خيار <b>repo</b><br>
+      4. اضغط Generate وانسخ التوكن<br>
+      5. الصقه هنا 👇
+    </p>
+    <div class="token-row">
+      <input type="password" id="input-token" placeholder="ghp_xxxxxxxxxxxxxxxxxx" class="ltr">
+      <button class="btn-sm btn-purple" onclick="toggleToken()">👁️</button>
+    </div>
+    <input id="input-owner" placeholder="اسم مستخدم GitHub (مثال: fahd6426)" class="ltr">
+    <input id="input-repo"  placeholder="اسم الريبو (مثال: products-page)" class="ltr">
+    <button class="btn btn-green" onclick="saveSetup()">✅ حفظ وتحميل المنتجات</button>
+  </div>
+
+  <!-- Main Dashboard (hidden until setup) -->
+
+  <div id="main-dashboard" style="display:none;">
+
+```
+<!-- Connection status -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+  <span style="font-size:12px;color:#9ca3af;">
+    <span class="status-dot dot-green" id="conn-dot"></span>
+    <span id="conn-label">متصل</span>
+  </span>
+  <button class="btn-sm" style="background:rgba(255,255,255,0.08);color:#9ca3af;" onclick="resetSetup()">
+    🔧 تغيير الإعدادات
+  </button>
+</div>
+
+<!-- Add Product -->
+<div class="card">
+  <h2>➕ إضافة منتج جديد</h2>
+  <input id="new-name"  placeholder="اسم المنتج (مثال: 🆕 ساعة ذكية)">
+  <input id="new-image" placeholder="اسم ملف الصورة (مثال: watch.jpg)" class="ltr">
+  <input id="new-link"  placeholder="رابط أمازون (https://amzn.to/...)" class="ltr">
+  <button class="btn btn-purple" onclick="addProduct()">➕ أضفه أول الصفحة</button>
+</div>
+
+<!-- Products List -->
+<div class="card">
+  <h2>📋 المنتجات (<span id="count">0</span>)</h2>
+  <div id="products-list">
+    <div class="loading">جاري التحميل...</div>
+  </div>
+</div>
+
+<!-- Publish Button -->
+<button class="btn btn-green" id="publish-btn" onclick="publishSite()" style="margin-bottom:12px;">
+  🚀 نشر التغييرات على الموقع
+</button>
+
+<p style="text-align:center;font-size:11px;color:#4b5563;">
+  آخر نشر: <span id="last-publish">لم يتم بعد</span>
+</p>
+```
+
+  </div>
+
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────
+let products = [];
+let token = '', owner = '', repo = '';
+let confirmCallback = null;
+
+// ─── Init ─────────────────────────────────────────────────
+window.onload = () => {
+  token = localStorage.getItem('gh_token') || '';
+  owner = localStorage.getItem('gh_owner') || '';
+  repo  = localStorage.getItem('gh_repo')  || '';
+
+  const lastPublish = localStorage.getItem('last_publish');
+  if (lastPublish) document.getElementById('last-publish').textContent = lastPublish;
+
+  if (token && owner && repo) {
+    document.getElementById('setup-card').style.display = 'none';
+    document.getElementById('main-dashboard').style.display = 'block';
+    loadProducts();
+  } else {
+    document.getElementById('header-sub').textContent = 'أكمل الإعداد أولاً';
+  }
+};
+
+// ─── Setup ────────────────────────────────────────────────
+function saveSetup() {
+  token = document.getElementById('input-token').value.trim();
+  owner = document.getElementById('input-owner').value.trim();
+  repo  = document.getElementById('input-repo').value.trim();
+  if (!token || !owner || !repo) { toast('⚠️ اكمل كل الحقول'); return; }
+  localStorage.setItem('gh_token', token);
+  localStorage.setItem('gh_owner', owner);
+  localStorage.setItem('gh_repo',  repo);
+  document.getElementById('setup-card').style.display = 'none';
+  document.getElementById('main-dashboard').style.display = 'block';
+  loadProducts();
+}
+
+function resetSetup() {
+  confirm('تبي تغير الإعدادات؟', () => {
+    document.getElementById('setup-card').style.display = 'block';
+    document.getElementById('main-dashboard').style.display = 'none';
+    document.getElementById('input-token').value = token;
+    document.getElementById('input-owner').value = owner;
+    document.getElementById('input-repo').value  = repo;
+  });
+}
+
+function toggleToken() {
+  const inp = document.getElementById('input-token');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// ─── GitHub API ───────────────────────────────────────────
+async function ghGet(path) {
+  const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function ghPut(path, content, sha, message) {
+  const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, content: btoa(unescape(encodeURIComponent(content))), sha })
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ─── Load Products ────────────────────────────────────────
+async function loadProducts() {
+  document.getElementById('header-sub').textContent = 'جاري التحميل...';
+  document.getElementById('products-list').innerHTML = '<div class="loading">⏳ جاري جلب المنتجات...</div>';
+  try {
+    const file = await ghGet('products.json');
+    products = JSON.parse(atob(file.content.replace(/\n/g, '')));
+    renderProducts();
+    document.getElementById('header-sub').textContent = `${products.length} منتج`;
+    setConn(true);
+  } catch(e) {
+    // products.json doesn't exist yet — load defaults
+    products = getDefaultProducts();
+    renderProducts();
+    document.getElementById('header-sub').textContent = `${products.length} منتج (افتراضي)`;
+    setConn(true);
+    toast('📦 تم تحميل المنتجات الافتراضية — اضغط نشر لحفظها');
+  }
+}
+
+// ─── Render ───────────────────────────────────────────────
+function renderProducts() {
+  const list = document.getElementById('products-list');
+  document.getElementById('count').textContent = products.length;
+  if (!products.length) {
+    list.innerHTML = '<div class="loading" style="color:#6b7280;">لا توجد منتجات</div>';
+    return;
+  }
+  list.innerHTML = products.map((p, i) => `
+    <div class="product-row ${i===0?'first':''}">
+      <span class="num">${i+1}</span>
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-img">${p.image}</div>
+      </div>
+      <div class="actions">
+        <button class="btn-sm btn-purple" onclick="move(${i},-1)" ${i===0?'disabled':''}>▲</button>
+        <button class="btn-sm btn-purple" onclick="move(${i},1)"  ${i===products.length-1?'disabled':''}>▼</button>
+        <button class="btn-sm btn-red"    onclick="askDelete(${i})">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── Add ──────────────────────────────────────────────────
+function addProduct() {
+  const name  = document.getElementById('new-name').value.trim();
+  const image = document.getElementById('new-image').value.trim();
+  const link  = document.getElementById('new-link').value.trim();
+  if (!name || !image || !link) { toast('⚠️ اكمل كل الحقول'); return; }
+  products.unshift({ id: Date.now(), name, image, link });
+  renderProducts();
+  document.getElementById('new-name').value  = '';
+  document.getElementById('new-image').value = '';
+  document.getElementById('new-link').value  = '';
+  document.getElementById('header-sub').textContent = `${products.length} منتج`;
+  toast('✅ تم الإضافة — اضغط نشر لحفظ التغييرات');
+}
+
+// ─── Move ─────────────────────────────────────────────────
+function move(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= products.length) return;
+  [products[idx], products[newIdx]] = [products[newIdx], products[idx]];
+  renderProducts();
+}
+
+// ─── Delete ───────────────────────────────────────────────
+function askDelete(idx) {
+  confirm(`تبي تحذف "${products[idx].name}"؟`, () => {
+    products.splice(idx, 1);
+    renderProducts();
+    document.getElementById('header-sub').textContent = `${products.length} منتج`;
+    toast('🗑️ تم الحذف — اضغط نشر لحفظ التغييرات');
+  });
+}
+
+// ─── Publish ──────────────────────────────────────────────
+async function publishSite() {
+  const btn = document.getElementById('publish-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري النشر...';
+  try {
+    // 1. Save products.json
+    let jsonSha = '';
+    try { jsonSha = (await ghGet('products.json')).sha; } catch {}
+    await ghPut('products.json', JSON.stringify(products, null, 2), jsonSha, '🔄 تحديث قائمة المنتجات');
+
+    // 2. Save index.html
+    let htmlSha = '';
+    try { htmlSha = (await ghGet('index.html')).sha; } catch {}
+    await ghPut('index.html', generateHTML(products), htmlSha, '🛒 تحديث صفحة المنتجات');
+
+    const now = new Date().toLocaleString('ar-SA');
+    localStorage.setItem('last_publish', now);
+    document.getElementById('last-publish').textContent = now;
+    toast('🚀 تم النشر بنجاح! الموقع يتحدث خلال ثواني');
+    setConn(true);
+  } catch(err) {
+    toast('❌ خطأ: ' + (err.message.includes('401') ? 'التوكن غلط أو منتهي' : 'مشكلة في الاتصال'));
+    setConn(false);
+    console.error(err);
+  }
+  btn.disabled = false;
+  btn.textContent = '🚀 نشر التغييرات على الموقع';
+}
+
+// ─── Generate HTML ────────────────────────────────────────
+function generateHTML(prods) {
+  const cards = prods.map(p => `
+    <div class="product">
+      <a href="${p.link}" target="_blank">
+        <img src="images/${p.image}" alt="${p.name}">
+        <h3>${p.name}</h3>
+      </a>
+    </div>`).join('');
+
+  return `<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>دليلك في أمازون</title>
+<style>
+body{margin:0;background:#f4f4f4;font-family:Arial,sans-serif;direction:rtl;}
+.container{max-width:1100px;margin:auto;padding:20px;}
+.header{text-align:center;margin-bottom:40px;}
+.header h1{font-size:32px;margin-bottom:15px;}
+.logo{width:90px;margin:0 auto 10px;}
+.logo img{width:100%;display:block;}
+.products{display:grid;grid-template-columns:repeat(2,1fr);gap:25px;}
+@media(min-width:900px){.products{grid-template-columns:repeat(3,1fr);}}
+.product{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.1);transition:transform .2s ease;}
+.product:hover{transform:translateY(-5px);}
+.product img{width:100%;height:260px;object-fit:cover;}
+.product h3{margin:0;padding:15px;font-size:18px;text-align:center;}
+.product a{text-decoration:none;color:#000;display:block;}
+</style>
+
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>دليلك في أمازون</h1>
+    <div class="logo"><img src="images/logo.png" alt="دليلك في أمازون"></div>
+  </div>
+  <div class="products">${cards}</div>
+</div>
+</body>
+</html>`;
+}
+
+// ─── Helpers ──────────────────────────────────────────────
+function setConn(ok) {
+document.getElementById(‘conn-dot’).className  = `status-dot ${ok?'dot-green':'dot-red'}`;
+document.getElementById(‘conn-label’).textContent = ok ? ‘متصل’ : ‘غير متصل’;
+}
+
+function toast(msg) {
+const t = document.getElementById(‘toast’);
+t.textContent = msg;
+t.style.display = ‘block’;
+clearTimeout(t._timer);
+t._timer = setTimeout(() => t.style.display = ‘none’, 3000);
+}
+
+function confirm(msg, cb) {
+document.getElementById(‘confirm-msg’).textContent = msg;
+document.getElementById(‘confirm-modal’).style.display = ‘flex’;
+confirmCallback = cb;
+}
+function confirmYes() { closeConfirm(); if (confirmCallback) confirmCallback(); }
+function closeConfirm() { document.getElementById(‘confirm-modal’).style.display = ‘none’; confirmCallback = null; }
+
+function getDefaultProducts() {
+return [
+{id:1,  name:“🆕 حافظة كيبورد ايباد”,           image:“hafetha.png”,   link:“https://amzn.to/3P3cf1k”},
+{id:2,  name:“🆕 صينية كونسول”,                  image:“t.png”,         link:“https://amzn.to/4bVp8TX”},
+{id:3,  name:“موزع صابون”,                        image:“lux.png”,       link:“https://amzn.to/4vbVIs7”},
+{id:4,  name:“مجموعة كرات الاستحمام”,             image:“qurat.png”,     link:“https://amzn.to/3NXUxfc”},
+{id:5,  name:“مكنسة كهربائية للمراتب والسجاد”,   image:“maken.png”,     link:“https://amzn.to/3OBC884”},
+{id:6,  name:“منقلة مقياس رقمية”,                image:“monkalah.png”,  link:“https://amzn.to/4rO8Mle”},
+{id:7,  name:“مسخن طعام كهربائي قابل للطي”,      image:“sakhan.png”,    link:“https://amzn.to/4aRngtx”},
+{id:8,  name:“مكنسة كهربائية روبوتية”,            image:“cleane.png”,    link:“https://amzn.to/3OlflNu”},
+{id:9,  name:“منفضة غبار ومنفاخ”,                image:“blower.jpg”,    link:“https://amzn.to/4bo680n”},
+{id:10, name:“مغناطيس ثلاجة صوتي”,               image:“fridge.jpg”,    link:“https://amzn.to/4kqHLS7”},
+{id:11, name:“كاميرا سيارة 4K”,                  image:“dashcam.jpg”,   link:“https://amzn.to/45QN9bh”},
+{id:12, name:“وسادة مقعد”,                        image:“wesadah.jpg”,   link:“https://amzn.to/4kmgJv4”},
+{id:13, name:“منقي هواء”,                         image:“hawaa.jpg”,     link:“https://amzn.to/4razjJq”},
+{id:14, name:“ملصقات ثلاثية الأبعاد”,             image:“molsaq.png”,    link:“https://amzn.to/4tv1N1T”},
+{id:15, name:“شاشة تلفاز متنقلة”,                image:“telfaz.png”,    link:“https://amzn.to/4695dgY”},
+];
+}
+</script>
+
+</body>
+</html>
