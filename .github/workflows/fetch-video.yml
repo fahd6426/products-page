@@ -12,10 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install yt-dlp
-        run: pip install -U yt-dlp
+        run: pip install -U "yt-dlp[default,curl-cffi]"
       - name: Download video
         run: |
-          yt-dlp -f "best[ext=mp4]/best" -o "clip.%(ext)s" "${{ github.event.client_payload.video_url }}"
+          yt-dlp --impersonate chrome --extractor-args "generic:impersonate" -f "best[ext=mp4]/best" -o "clip.%(ext)s" "${{ github.event.client_payload.video_url }}"
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
