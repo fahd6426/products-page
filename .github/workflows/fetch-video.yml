@@ -11,11 +11,64 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install yt-dlp
-        run: pip install -U "yt-dlp[default,curl-cffi]"
+      - name: Install tools
+        run: |
+          pip install -U playwright "yt-dlp[default,curl-cffi]"
+          python -m playwright install --with-deps chromium
+      - name: Find video URL with browser
+        run: |
+          cat > grab.py << 'PYEOF'
+          import sys, asyncio
+          from urllib.parse import urlparse
+          from playwright.async_api import async_playwright
+          url = sys.argv[1]
+          found = []
+          final = {'url': url}
+          async def main():
+              async with async_playwright() as p:
+                  b = await p.chromium.launch(headless=True, args=['--autoplay-policy=no-user-gesture-required', '--disable-blink-features=AutomationControlled'])
+                  ctx = await b.new_context(user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36')
+                  page = await ctx.new_page()
+                  def on_resp(r):
+                      u = r.url
+                      ct = r.headers.get('content-type', '')
+                      if '.m3u8' in u or '.mp4' in u or 'video/' in ct or 'mpegurl' in ct:
+                          found.append(u)
+                  page.on('response', on_resp)
+                  await page.goto(url, wait_until='domcontentloaded', timeout=60000)
+                  await page.wait_for_timeout(6000)
+                  for f in page.frames:
+                      try:
+                          await f.click('video', timeout=2000)
+                      except Exception:
+                          pass
+                      try:
+                          src = await f.eval_on_selector('video', 'v => v.currentSrc || v.src')
+                          if src and not src.startswith('blob:'):
+                              found.append(src)
+                      except Exception:
+                          pass
+                  await page.wait_for_timeout(8000)
+                  final['url'] = page.url
+                  print('TITLE', await page.title())
+                  await b.close()
+          asyncio.run(main())
+          print('FINAL_URL', final['url'])
+          print('FOUND', found[:20])
+          m3u8 = [u for u in found if '.m3u8' in u]
+          pick = (m3u8 or found or [''])[0]
+          pu = urlparse(final['url'])
+          open('video_url.txt', 'w').write(pick)
+          open('referer.txt', 'w').write(pu.scheme + '://' + pu.netloc + '/')
+          PYEOF
+          python grab.py "${{ github.event.client_payload.video_url }}"
       - name: Download video
         run: |
-          yt-dlp --impersonate chrome --extractor-args "generic:impersonate" -f "best[ext=mp4]/best" -o "clip.%(ext)s" "${{ github.event.client_payload.video_url }}"
+          U=$(cat video_url.txt)
+          R=$(cat referer.txt)
+          echo "VIDEO: $U"
+          test -n "$U"
+          yt-dlp --impersonate chrome --add-header "Referer: $R" -f "best[ext=mp4]/best" -o "clip.%(ext)s" "$U"
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
