@@ -55,6 +55,7 @@ jobs:
           asyncio.run(main())
           print('FINAL_URL', final['url'])
           print('FOUND', found[:20])
+          found = [u for u in found if 'plyr.io' not in u and 'blank.mp4' not in u]
           m3u8 = [u for u in found if '.m3u8' in u]
           pick = (m3u8 or found or [''])[0]
           pu = urlparse(final['url'])
