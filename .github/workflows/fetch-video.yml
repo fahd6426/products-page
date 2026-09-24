@@ -18,7 +18,7 @@ jobs:
       - name: Find video URL with browser
         run: |
           cat > grab.py << 'PYEOF'
-          import sys, asyncio
+          import sys, asyncio, re
           from urllib.parse import urlparse
           from playwright.async_api import async_playwright
           url = sys.argv[1]
@@ -49,6 +49,24 @@ jobs:
                       except Exception:
                           pass
                   await page.wait_for_timeout(8000)
+                  try:
+                      for f in page.frames:
+                          h = await f.content()
+                          for mm in re.findall(r'https?://[^\s"<>]+?\.(?:mp4|m3u8)', h):
+                              found.append(mm)
+                  except Exception:
+                      pass
+                  if 'streamff' in url:
+                      vid = url.rstrip('/').split('/')[-1]
+                      try:
+                          r = await ctx.request.get('https://streamff.com/api/videos/' + vid)
+                          txt = await r.text()
+                          print('SFAPI', r.status, txt[:300])
+                          for mm in re.findall(r'[^\s"<>]+\.mp4', txt):
+                              mm = mm.replace(chr(92), '')
+                              found.append(mm if mm.startswith('http') else 'https://streamff.com/' + mm.lstrip('/'))
+                      except Exception as e:
+                          print('SFERR', e)
                   final['url'] = page.url
                   print('TITLE', await page.title())
                   await b.close()
