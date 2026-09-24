@@ -22,6 +22,10 @@ jobs:
           from urllib.parse import urlparse
           from playwright.async_api import async_playwright
           url = sys.argv[1]
+          if 'v.redd.it' in url:
+              open('video_url.txt', 'w').write('REDDIT:' + url)
+              open('referer.txt', 'w').write('https://www.reddit.com/')
+              sys.exit(0)
           found = []
           final = {'url': url}
           async def main():
@@ -86,6 +90,14 @@ jobs:
           U=$(cat video_url.txt)
           R=$(cat referer.txt)
           echo "VIDEO: $U"
+          if [[ "$U" == REDDIT:* ]]; then
+            B="${U#REDDIT:}"; B="${B%/}"
+            for q in 1080 720 480 360 240; do curl -sfL -A "Mozilla/5.0" -o v.mp4 "$B/DASH_$q.mp4" && break; done
+            curl -sfL -A "Mozilla/5.0" -o a.mp4 "$B/DASH_AUDIO_128.mp4" || curl -sfL -A "Mozilla/5.0" -o a.mp4 "$B/DASH_AUDIO_64.mp4" || curl -sfL -A "Mozilla/5.0" -o a.mp4 "$B/DASH_audio.mp4" || true
+            if [ -s a.mp4 ]; then ffmpeg -y -i v.mp4 -i a.mp4 -c copy clip.mp4; else mv v.mp4 clip.mp4; fi
+            test -s clip.mp4
+            exit 0
+          fi
           test -n "$U"
           yt-dlp --impersonate chrome --add-header "Referer: $R" -f "best[ext=mp4]/best" -o "clip.%(ext)s" "$U"
       - name: Create Release
