@@ -1,0 +1,24 @@
+name: Lineup Card
+on:
+  repository_dispatch:
+    types: [make-lineup]
+permissions:
+  contents: write
+jobs:
+  card:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: |
+          pip install playwright requests
+          python -m playwright install --with-deps chromium
+      - name: Draw
+        run: python scripts/lineup_card.py
+        env:
+          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: lineup-${{ github.event.client_payload.run_id }}
+          files: lineup.png
