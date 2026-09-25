@@ -23,7 +23,8 @@ def find_img(name, team):
         if s:
             return s
         time.sleep(0.3)
-    for q in (name + ' ' + team + ' national team footballer', name + ' footballer'):
+    surname = name.split()[-1] if name.split() else name
+    for q in (name + ' ' + team + ' national team footballer', name + ' footballer', surname + ' ' + team + ' national football team player'):
         try:
             r = requests.get(API, params={'action': 'query', 'generator': 'search', 'gsrsearch': q, 'gsrlimit': 1, 'prop': 'pageimages', 'piprop': 'thumbnail', 'pithumbsize': 500, 'format': 'json', 'formatversion': 2}, headers=UA, timeout=10).json()
             pages = (r.get('query') or {}).get('pages') or []
