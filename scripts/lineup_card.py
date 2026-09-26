@@ -1,46 +1,67 @@
-import os, json, time, html, requests
+import os, json, time, html, base64, requests
 from playwright.sync_api import sync_playwright
 
 p = json.loads(os.environ['PAYLOAD'])
-UA = {'User-Agent': 'RzdinhoBot/1.0 (lineup cards)'}
+UA = {'User-Agent': 'RzdinhoLineupBot/1.1 (https://github.com/fahd6426; fahd6426@users.noreply.github.com)'}
 API = 'https://en.wikipedia.org/w/api.php'
 
+def wiki_get(params):
+    for attempt in range(4):
+        try:
+            r = requests.get(API, params=params, headers=UA, timeout=15)
+            if r.status_code == 429 or 'json' not in r.headers.get('content-type', ''):
+                print('RATE', r.status_code)
+                time.sleep(3 + attempt * 3)
+                continue
+            return r.json()
+        except Exception as e:
+            print('ERR', e)
+            time.sleep(2)
+    return {}
+
 def thumb_by_title(title):
-    try:
-        r = requests.get(API, params={'action': 'query', 'titles': title, 'prop': 'pageimages|pageprops', 'piprop': 'thumbnail', 'pithumbsize': 500, 'redirects': 1, 'format': 'json', 'formatversion': 2}, headers=UA, timeout=10).json()
-        pg = ((r.get('query') or {}).get('pages') or [{}])[0]
-        if 'disambiguation' in (pg.get('pageprops') or {}):
-            return None
-        t = pg.get('thumbnail')
-        return t['source'] if t else None
-    except Exception as e:
-        print('ERR', e)
+    r = wiki_get({'action': 'query', 'titles': title, 'prop': 'pageimages|pageprops', 'piprop': 'thumbnail', 'pithumbsize': 400, 'redirects': 1, 'format': 'json', 'formatversion': 2})
+    pg = ((r.get('query') or {}).get('pages') or [{}])[0]
+    if 'disambiguation' in (pg.get('pageprops') or {}):
         return None
+    t = pg.get('thumbnail')
+    return t['source'] if t else None
 
 def find_img(name, team):
-    for t in (name, name + ' (footballer)', name + ' (footballer, born)'):
+    for t in (name, name + ' (footballer)'):
         s = thumb_by_title(t)
         if s:
             return s
-        time.sleep(0.3)
+        time.sleep(1)
     surname = name.split()[-1] if name.split() else name
-    for q in (name + ' ' + team + ' national team footballer', name + ' footballer', surname + ' ' + team + ' national football team player'):
+    for q in (name + ' ' + team + ' footballer', surname + ' ' + team + ' national football team player'):
+        r = wiki_get({'action': 'query', 'generator': 'search', 'gsrsearch': q, 'gsrlimit': 1, 'prop': 'pageimages', 'piprop': 'thumbnail', 'pithumbsize': 400, 'format': 'json', 'formatversion': 2})
+        pages = (r.get('query') or {}).get('pages') or []
+        if pages and pages[0].get('thumbnail'):
+            return pages[0]['thumbnail']['source']
+        time.sleep(1)
+    return None
+
+def as_data_uri(url):
+    for attempt in range(3):
         try:
-            r = requests.get(API, params={'action': 'query', 'generator': 'search', 'gsrsearch': q, 'gsrlimit': 1, 'prop': 'pageimages', 'piprop': 'thumbnail', 'pithumbsize': 500, 'format': 'json', 'formatversion': 2}, headers=UA, timeout=10).json()
-            pages = (r.get('query') or {}).get('pages') or []
-            if pages and pages[0].get('thumbnail'):
-                return pages[0]['thumbnail']['source']
+            r = requests.get(url, headers=UA, timeout=20)
+            if r.status_code == 200 and r.content:
+                ct = r.headers.get('content-type', 'image/jpeg').split(';')[0]
+                return 'data:' + ct + ';base64,' + base64.b64encode(r.content).decode()
+            print('IMGSTATUS', r.status_code)
         except Exception as e:
-            print('ERR', e)
-        time.sleep(0.4)
+            print('IMGERR', e)
+        time.sleep(2 + attempt * 2)
     return None
 
 rows = p['rows']
 for row in rows:
     for pl in row:
-        pl['img'] = find_img(pl['en'], p['team_en'])
-        print(pl['en'], pl['img'])
-        time.sleep(0.3)
+        u = find_img(pl['en'], p['team_en'])
+        pl['img'] = as_data_uri(u) if u else None
+        print(pl['en'], 'OK' if pl['img'] else 'NONE', u)
+        time.sleep(1)
 
 def card(pl):
     if pl.get('img'):
