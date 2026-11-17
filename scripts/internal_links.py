@@ -165,12 +165,51 @@ def write_if_changed(path, new):
     return True
 
 
+NOINDEX_TAG = '<!--NOINDEX--><meta name="robots" content="noindex,follow"><!--/NOINDEX-->'
+NOINDEX_RE = re.compile(r'<!--NOINDEX-->.*?<!--/NOINDEX-->', re.S)
+
+
+def load_noindex():
+    """المقالات المخفية عن قوقل: data/noindex.json"""
+    try:
+        with open(os.path.join(ROOT, 'data', 'noindex.json'), encoding='utf-8') as f:
+            data = json.load(f)
+        return set(data.get('slugs', []) if isinstance(data, dict) else data)
+    except (OSError, ValueError):
+        return set()
+
+
+def set_noindex(page, hidden):
+    page = NOINDEX_RE.sub('', page)
+    if hidden:
+        m = re.search(r'<head[^>]*>', page, re.I)
+        if m:
+            page = page[:m.end()] + NOINDEX_TAG + page[m.end():]
+    return page
+
+
+def clean_sitemap(hidden):
+    """نشيل المقالات المخفية من خريطة الموقع (الـ workflow يعيد بناءها كل يوم)."""
+    path = os.path.join(ROOT, 'sitemap.xml')
+    if not hidden or not os.path.exists(path):
+        return False
+    with open(path, encoding='utf-8') as f:
+        xml = f.read()
+    new = xml
+    for slug in hidden:
+        new = re.sub(r'<url>\s*<loc>[^<]*/blog/' + re.escape(slug) + r'\.html</loc>.*?</url>\s*', '', new, flags=re.S)
+    return write_if_changed(path, new) if new != xml else False
+
+
 def main():
-    items = load_articles()
+    hidden = load_noindex()
+    all_items = load_articles()
+    # المقالات المخفية ما نوجه لها روابط، نوجه الروابط للمقالات القوية
+    items = [o for o in all_items if o['slug'] not in hidden]
     changed, skipped = 0, []
     inbound = {}
     # نبدأ بالأقدم عشان المقالات الجديدة ما تغيّر روابط القديمة كثير
-    for art in reversed(items):
+    for art in reversed(all_items):
         path = os.path.join(BLOG, art['slug'] + '.html')
         with open(path, encoding='utf-8') as f:
             page = f.read()
@@ -180,6 +219,7 @@ def main():
         if new is None:
             skipped.append(art['slug'])
             continue
+        new = set_noindex(new, art['slug'] in hidden)
         changed += write_if_changed(path, new)
 
     index = os.path.join(ROOT, 'index.html')
@@ -188,8 +228,9 @@ def main():
     new = put_block(page, posts_block(items), '<!--POSTS-START-->', '<!--POSTS-END-->',
                     [('<!--DEALS-END-->', False), ('<h2 class="st">اختياراتنا لك', True)])
     home = new is not None and write_if_changed(index, new)
+    smap = clean_sitemap(hidden)
 
-    print(f'articles: {len(items)} | updated: {changed} | home updated: {bool(home)} | skipped: {skipped}')
+    print(f'articles: {len(all_items)} | hidden: {len(hidden)} | updated: {changed} | home updated: {bool(home)} | sitemap cleaned: {bool(smap)} | skipped: {skipped}')
     return 0
 
 
