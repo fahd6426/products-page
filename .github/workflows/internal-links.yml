@@ -1,0 +1,37 @@
+name: Internal Links
+# يربط المقالات ببعض تلقائياً: كل ما ينضاف مقال جديد في blog/
+# يحدّث "مقالات ذات صلة" تحت المقالات و"أحدث المقالات" في الرئيسية.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'blog/**'
+      - 'scripts/internal_links.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: internal-links
+  cancel-in-progress: false
+
+jobs:
+  link:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update internal links
+        run: python3 scripts/internal_links.py
+      - name: Commit
+        run: |
+          if git diff --quiet; then echo "no changes"; exit 0; fi
+          git config user.name "dlilc-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "ربط المقالات تلقائياً"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1
